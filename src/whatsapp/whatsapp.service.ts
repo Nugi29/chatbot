@@ -13,7 +13,9 @@ export class WhatsappService {
     try{
         const reply = await this.openaiService.generateOpenAIResponse(message);
         this.sendMessage(number, reply);
-    }catch(e){
+        // this.sendMessage(number, "htto");
+
+      }catch(e){
         this.logger.error('Error handling user message:', e);
         this.sendMessage(number, 'Sorry, I could not process your request.');
     }
