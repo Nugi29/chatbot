@@ -25,6 +25,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "axios": "^1.9.0",
+  "googleapis": "^144.0.0",
     "openai": "^4.100.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
