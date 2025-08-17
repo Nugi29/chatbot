@@ -12,11 +12,19 @@ export class OpenaiService {
     });
   }
 
-  async generateOpenAIResponse(prompt: string): Promise<string> {
+  async generateOpenAIResponse(prompt: string, history?: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
     try {
+      const messages: { role: 'user' | 'assistant' | 'system'; content: string }[] = [
+        { role: 'system', content: 'You are a helpful WhatsApp assistant. Keep replies short and clear.' },
+      ];
+      if (history && history.length) {
+        messages.push(...history);
+      }
+      messages.push({ role: 'user', content: prompt });
+
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
+        messages,
       });
       return completion.choices[0].message?.content || 'No response';
     } catch (error) {
