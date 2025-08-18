@@ -54,3 +54,8 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Google Cloud service account credentials (never commit secrets)
+/service-account.json
+/service-account-*.json
+/credentials.json
