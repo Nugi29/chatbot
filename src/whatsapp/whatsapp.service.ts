@@ -47,18 +47,25 @@ export class WhatsappService {
   }
 
   async sendMessage(to: string, message: string) {
-    const apiKey = process.env.WHATSAPP_API_KEY;
-    const apiVersion = process.env.WHATSAPP_API_VERSION;
-    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const apiKey = process.env.WHATSAPP_API_KEY?.trim();
+  const apiVersion = process.env.WHATSAPP_API_VERSION?.trim();
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
     if (!apiKey || !apiVersion || !phoneId) {
       this.logger.warn('Missing WhatsApp API env vars. Skipping send.');
+      return;
+    }
+
+    // Normalize recipient number to digits-only (wa_id format)
+    const toDigits = (to || '').replace(/\D/g, '');
+    if (!toDigits) {
+      this.logger.warn('sendMessage called with invalid recipient number');
       return;
     }
 
     let data = JSON.stringify({
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: to,
+      to: toDigits,
       type: 'text',
       text: {
         preview_url: false,
@@ -85,9 +92,25 @@ export class WhatsappService {
       const status = error?.response?.status;
       const errObj = error?.response?.data?.error;
       const errMsg = errObj?.message || error?.message || 'unknown error';
-      this.logger.error(`WhatsApp send failed (${status || 'no-status'}): ${errMsg}`);
-      if (status === 401) {
-        this.logger.warn('Your WHATSAPP_API_KEY is invalid or expired. Refresh the token in Meta Developer and update the env.');
+      const errCode = errObj?.code;
+      const errSub = errObj?.error_subcode;
+      const errType = errObj?.type;
+      const trace = errObj?.fbtrace_id;
+      this.logger.error(
+        `WhatsApp send failed (${status || 'no-status'}) [code=${errCode ?? 'n/a'} sub=${errSub ?? 'n/a'} type=${errType ?? 'n/a'} trace=${trace ?? 'n/a'}]: ${errMsg}`,
+      );
+
+      // Friendly hints for common issues
+      if (status === 401 || errCode === 190) {
+        this.logger.warn('Access token invalid/expired. Generate a new permanent token in Meta Developer and update WHATSAPP_API_KEY.');
+      } else if (status === 400 && /Unsupported post request|does not exist|cannot be loaded/i.test(errMsg || '')) {
+        this.logger.warn('Phone Number ID likely does not belong to this token/app. Verify WHATSAPP_PHONE_NUMBER_ID and the token are from the same WhatsApp Business Account.');
+      } else if (status === 400 && /Invalid parameter|(#100)/i.test(errMsg || '')) {
+        this.logger.warn('Invalid parameter. Check WHATSAPP_API_VERSION and payload fields (to, type=text).');
+      } else if (status === 403 || errCode === 10 || errCode === 200) {
+        this.logger.warn('Permission issue. Ensure the app has WhatsApp permissions and the number is in the allowed/testers list if in Development mode.');
+      } else if (status === 429 || errCode === 613) {
+        this.logger.warn('Rate limit hit. Slow down message sending.');
       }
     }
   }

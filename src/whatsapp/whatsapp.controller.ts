@@ -19,7 +19,8 @@ export class WhatsappController {
         // Check if a token and mode is in the query string of the request
         if (mode && token) {
           // Check the mode and token sent is correct
-          if (mode === "subscribe" && token === process.env.WHATSAPP_CHALLANGE_KEY) {
+          const verifyToken = process.env.WHATSAPP_CHALLANGE_KEY?.trim();
+          if (mode === "subscribe" && token === verifyToken) {
             // Respond with the challenge token from the request
             console.log("WEBHOOK_VERIFIED");
             res.status(200).send(challenge);
